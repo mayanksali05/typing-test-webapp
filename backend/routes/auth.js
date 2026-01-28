@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const TempUser = require('../models/TempUser');
+const sendEmail = require('../utils/sendEmail');
+const bcrypt = require('bcryptjs');
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -15,13 +18,39 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        user = new User({ name, email, password });
-        await user.save();
+        // Generate Verification OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        const payload = { userId: user._id };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+        // Hash password before saving to existing TempUser changes or new TempUser
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+        // Check if email already in TempUser, if so update it
+        let tempUser = await TempUser.findOne({ email });
+        if (tempUser) {
+            tempUser.password = hashedPassword;
+            tempUser.otp = otp;
+            tempUser.name = name;
+            tempUser.createdAt = Date.now(); // Reset expiry
+            await tempUser.save();
+        } else {
+            tempUser = new TempUser({
+                name,
+                email,
+                password: hashedPassword,
+                otp
+            });
+            await tempUser.save();
+        }
+
+        // Send Email
+        await sendEmail({
+            to: email,
+            subject: 'Email Verification OTP - MonkeyClone',
+            text: `Your OTP for email verification is: ${otp}`
+        });
+
+        res.status(201).json({ message: 'OTP sent to email', email });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ message: 'Server error: ' + err.message });
@@ -45,10 +74,58 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Optional: Check isVerified if you decide to keep it in schema
+        // if (!user.isVerified) { ... }
+
         const payload = { userId: user._id };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Server error: ' + err.message });
+    }
+});
+
+// @route   POST /api/auth/verify-email
+// @desc    Verify email using OTP
+// @access  Public
+router.post('/verify-email', async (req, res) => {
+    const { email, otp } = req.body;
+    try {
+        const tempUser = await TempUser.findOne({ email });
+
+        if (!tempUser) {
+            return res.status(400).json({ message: 'Invalid or expired OTP request' });
+        }
+
+        if (tempUser.otp !== otp) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        // Create actual User
+        const user = new User({
+            name: tempUser.name,
+            email: tempUser.email,
+            password: tempUser.password,
+            isVerified: true
+        });
+
+        // Current password is already hashed in TempUser
+        // We must prevent User model pre-save hook from hashing it again
+        user.unmarkModified('password');
+
+        await user.save();
+
+        // Remove from TempUser
+        await TempUser.deleteOne({ _id: tempUser._id });
+
+        res.json({ message: 'Email verified successfully. You can now login.' });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ message: 'Server error: ' + err.message });

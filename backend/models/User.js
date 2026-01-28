@@ -23,7 +23,11 @@ const UserSchema = new mongoose.Schema({
         default: Date.now
     },
     resetPasswordOtp: String,
-    resetPasswordExpires: Date
+    resetPasswordExpires: Date,
+    isVerified: {
+        type: Boolean,
+        default: true // Users in this collection are verified by default
+    }
 });
 
 // Password Hash Middleware
