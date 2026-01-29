@@ -168,10 +168,10 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
     }, [currIndex]);
 
     return (
-        <div className="typing-wrapper" style={{ width: '100%', outline: 'none' }} onClick={() => inputRef.current.focus()}>
+        <div className="typing-wrapper center" style={{ width: '100%', flexDirection: 'column', outline: 'none' }} onClick={() => inputRef.current.focus()}>
             {/* Stats Header */}
-            <div className="live-stats" style={{ display: 'flex', gap: '20px', fontSize: '1.5rem', marginBottom: '20px', color: 'var(--main-color)' }}>
-                <div>{timeLeft}s</div>
+            <div className="live-stats" style={{ display: 'flex', gap: '40px', fontSize: '1.5rem', marginBottom: '2rem', color: 'var(--main-color)' }}>
+                <div style={{ fontWeight: 'bold' }}>{timeLeft}s</div>
                 {status === 'running' && (
                     <div style={{ color: 'var(--sub-color)' }}>
                         {Math.round((correctChars / 5) / ((timeLimit - timeLeft + 0.1) / 60) || 0)} WPM
@@ -190,34 +190,40 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
 
             <div
                 ref={containerRef}
-                className="words-container"
+                className="words-container glass-panel"
                 style={{
-                    fontSize: '1.5rem',
-                    lineHeight: '1.5',
-                    height: '140px',
+                    fontSize: '1.8rem',
+                    lineHeight: '1.6',
+                    height: '160px',
                     overflow: 'hidden',
                     position: 'relative',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    width: '100%',
+                    padding: '1.5rem',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'text',
+                    border: '1px solid rgba(255,255,255,0.05)'
                 }}
             >
                 <div style={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: '10px'
+                    gap: '12px',
+                    color: 'var(--sub-color)'
                 }}>
                     {words.map((word, wIdx) => (
                         <div key={wIdx} className={`word ${wIdx === currIndex ? 'active' : ''}`} style={{ position: 'relative', display: 'flex' }}>
                             {/* Render loop for characters */}
                             {word.split('').map((char, cIdx) => (
-                                <span key={cIdx} className={getCharClass(wIdx, cIdx, char)} style={{
+                                <span key={cIdx} style={{
                                     color: getCharClass(wIdx, cIdx, char) === 'correct' ? 'var(--text-color)' :
-                                        getCharClass(wIdx, cIdx, char) === 'incorrect' ? 'var(--error-color)' : 'var(--sub-color)',
-                                    borderBottom: (wIdx === currIndex && cIdx === currInput.length) ? '2px solid var(--main-color)' : 'none' // Cursor attempt
+                                        getCharClass(wIdx, cIdx, char) === 'incorrect' ? 'var(--error-color)' : 'inherit',
+                                    borderBottom: (wIdx === currIndex && cIdx === currInput.length) ? '2px solid var(--main-color)' : 'none',
+                                    transition: 'color 0.1s'
                                 }}>
                                     {char}
                                 </span>
                             ))}
-                            {/* Show extra chars if typed wrong? Omitted for MVP simplicty */}
                             {/* Cursor at end of word if matching length */}
                             {wIdx === currIndex && currInput.length === word.length && (
                                 <span style={{ borderLeft: '2px solid var(--main-color)', marginLeft: '2px', animation: 'blink 1s infinite' }}></span>
@@ -228,9 +234,24 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
             </div>
 
             <div style={{ marginTop: '30px', textAlign: 'center' }}>
-                <button onClick={resetTest} style={{ background: 'var(--sub-color)', color: 'var(--bg-color)', padding: '10px 20px', borderRadius: '5px' }}>
+                <button
+                    onClick={resetTest}
+                    className="btn-secondary"
+                    style={{
+                        padding: '0.8rem 2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        fontSize: '1rem',
+                        margin: '0 auto'
+                    }}
+                >
                     <i className="fas fa-redo"></i> Restart Test
                 </button>
+            </div>
+
+            <div style={{ marginTop: '20px', color: 'var(--sub-color)', fontSize: '0.9rem', opacity: 0.7 }}>
+                <kbd style={{ background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>Tab</kbd> to restart
             </div>
         </div>
     );

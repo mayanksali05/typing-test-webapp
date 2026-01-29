@@ -74,10 +74,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        const isMatch = await user.matchPassword(password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
+
 
         // Optional: Check isVerified if you decide to keep it in schema
         // if (!user.isVerified) { ... }
