@@ -45,16 +45,24 @@ const Navbar = () => {
                 <div style={{ width: '1px', height: '24px', background: 'var(--sub-color)', opacity: 0.3, margin: '0 5px' }}></div>
 
                 {user ? (
-                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(251, 191, 36, 0.1)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase' }}>Lv.</span>
+                            <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fbbf24' }}>{user.level}</span>
+                        </div>
                         <Link to="/dashboard" style={{
                             color: isActive('/dashboard') ? 'var(--main-color)' : 'var(--text-color)',
-                            fontWeight: '500',
-                            fontSize: '0.9rem'
+                            fontWeight: '600',
+                            fontSize: '0.9rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
                         }}>
+                            <i className="fas fa-user-circle" style={{ fontSize: '1.2rem', opacity: 0.7 }}></i>
                             {user.name}
                         </Link>
-                        <button onClick={logout} className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }}>
-                            <i className="fas fa-sign-out-alt" style={{ marginRight: '5px' }}></i> Logout
+                        <button onClick={logout} className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}>
+                            <i className="fas fa-sign-out-alt"></i>
                         </button>
                     </div>
                 ) : (

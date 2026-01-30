@@ -10,9 +10,17 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
     const [timeLeft, setTimeLeft] = useState(timeLimit);
     const [correctChars, setCorrectChars] = useState(0);
     const [incorrectChars, setIncorrectChars] = useState(0);
+    const [wpmHistory, setWpmHistory] = useState([]);
+    const [errorMap, setErrorMap] = useState({});
 
     const inputRef = useRef(null);
     const containerRef = useRef(null);
+    const statsRef = useRef({ correct: 0, incorrect: 0 });
+
+    // Keep refs in sync with state for timer closure
+    useEffect(() => {
+        statsRef.current = { correct: correctChars, incorrect: incorrectChars };
+    }, [correctChars, incorrectChars]);
 
     // Initialize words
     useEffect(() => {
@@ -28,6 +36,9 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
         setTimeLeft(timeLimit);
         setCorrectChars(0);
         setIncorrectChars(0);
+        setWpmHistory([]);
+        setErrorMap({});
+        statsRef.current = { correct: 0, incorrect: 0 };
         if (inputRef.current) inputRef.current.focus();
     };
 
@@ -41,20 +52,37 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
             accuracy: Math.round((correctChars / (correctChars + incorrectChars)) * 100) || 0,
             correctChars,
             incorrectChars,
-            totalChars: correctChars + incorrectChars
+            totalChars: correctChars + incorrectChars,
+            wpmHistory,
+            errorMap
         });
-    }, [correctChars, incorrectChars, timeLimit, onTestEnd]);
+    }, [correctChars, incorrectChars, timeLimit, onTestEnd, wpmHistory, errorMap]);
 
     // Timer
     useEffect(() => {
         let interval;
         if (status === 'running' && timeLeft > 0) {
             interval = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
+                setTimeLeft((prev) => {
+                    const next = prev - 1;
+                    const elapsed = timeLimit - next;
+
+                    // Capture stats every second using refs to avoid effect restarts
+                    const { correct, incorrect } = statsRef.current;
+                    const currentWpm = Math.round((correct / 5) / (elapsed / 60));
+                    const currentAccuracy = Math.round((correct / (correct + incorrect)) * 100) || 0;
+
+                    setWpmHistory(prevHistory => [
+                        ...prevHistory,
+                        { time: elapsed, wpm: currentWpm, accuracy: currentAccuracy }
+                    ]);
+
+                    return next;
+                });
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [status, timeLeft]);
+    }, [status, timeLimit]);
 
     useEffect(() => {
         if (status === 'running' && timeLeft === 0) {
@@ -104,11 +132,20 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
             return;
         }
 
-        setCurrInput(value);
+        // Error tracking
+        const targetWord = words[currIndex];
+        if (targetWord && value.length > currInput.length) {
+            const lastChar = value[value.length - 1];
+            const targetChar = targetWord[value.length - 1];
+            if (targetChar && lastChar !== targetChar) {
+                setErrorMap(prev => ({
+                    ...prev,
+                    [targetChar]: (prev[targetChar] || 0) + 1
+                }));
+            }
+        }
 
-        // Live Stat Update (complex to do perfectly without refactoring, 
-        // but we can count total keypresses if we want. 
-        // For now, we calculate stats at the end or derived from History + Current Input).
+        setCurrInput(value);
     };
 
     // Derived calculations for rendering

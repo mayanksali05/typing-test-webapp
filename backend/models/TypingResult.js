@@ -27,6 +27,19 @@ const TypingResultSchema = new mongoose.Schema({
         type: Number, // duration in seconds (15, 30, 60)
         required: true
     },
+    rawWpmHistory: [
+        {
+            time: Number,
+            wpm: Number,
+            rawWpm: Number,
+            accuracy: Number
+        }
+    ],
+    errorMap: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
     createdAt: {
         type: Date,
         default: Date.now

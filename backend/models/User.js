@@ -27,8 +27,28 @@ const UserSchema = new mongoose.Schema({
     isVerified: {
         type: Boolean,
         default: true // Users in this collection are verified by default
+    },
+    xp: {
+        type: Number,
+        default: 0
+    },
+    level: {
+        type: Number,
+        default: 1
+    },
+    achievements: [
+        {
+            code: String,
+            name: String,
+            description: String,
+            unlockedAt: { type: Date, default: Date.now }
+        }
+    ],
+    stats: {
+        bestWpm: { type: Number, default: 0 },
+        testsCompleted: { type: Number, default: 0 }
     }
-});
+}, { timestamps: true });
 
 // Password Hash Middleware
 UserSchema.pre('save', async function () {

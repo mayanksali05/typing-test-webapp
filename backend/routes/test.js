@@ -22,7 +22,7 @@ const auth = (req, res, next) => {
 // @desc    Save typing test result
 // @access  Private
 router.post('/save', auth, async (req, res) => {
-    const { wpm, accuracy, errors, totalCharacters, duration } = req.body;
+    const { wpm, accuracy, errors, totalCharacters, duration, rawWpmHistory, errorMap } = req.body;
 
     try {
         const newResult = new TypingResult({
@@ -31,11 +31,64 @@ router.post('/save', auth, async (req, res) => {
             accuracy,
             errors,
             totalCharacters,
-            duration
+            duration,
+            rawWpmHistory,
+            errorMap
         });
 
-        const savedResult = await newResult.save();
-        res.json(savedResult);
+        await newResult.save();
+
+        // Gamification Logic
+        const user = await User.findById(req.userId);
+        if (user) {
+            // Award XP: base (50) + (wpm * 2) + (accuracy bonus)
+            const earnedXp = Math.round(50 + (wpm * 2) + (accuracy > 95 ? 50 : 0));
+            user.xp += earnedXp;
+
+            // Level Up logic: Level = floor(sqrt(xp / 100)) + 1
+            const nextLevel = Math.floor(Math.sqrt(user.xp / 100)) + 1;
+            const leveledUp = nextLevel > user.level;
+            user.level = nextLevel;
+
+            // Stats update
+            if (wpm > user.stats.bestWpm) user.stats.bestWpm = wpm;
+            user.stats.testsCompleted += 1;
+
+            // Achievement Checks
+            const currentAchievementCodes = user.achievements.map(a => a.code);
+            const newAchievements = [];
+
+            if (wpm >= 80 && !currentAchievementCodes.includes('SPEED_DEMON')) {
+                newAchievements.push({ code: 'SPEED_DEMON', name: 'Speed Demon', description: 'Reached 80 WPM' });
+            }
+            if (wpm >= 100 && !currentAchievementCodes.includes('MASTER')) {
+                newAchievements.push({ code: 'MASTER', name: 'Master typer', description: 'Reached 100 WPM' });
+            }
+            if (accuracy === 100 && duration >= 30 && !currentAchievementCodes.includes('SHARPSHOOTER')) {
+                newAchievements.push({ code: 'SHARPSHOOTER', name: 'Sharpshooter', description: '100% Accuracy on 30s+ test' });
+            }
+            if (user.stats.testsCompleted >= 10 && !currentAchievementCodes.includes('REGULAR')) {
+                newAchievements.push({ code: 'REGULAR', name: 'Regular', description: 'Completed 10 tests' });
+            }
+
+            if (newAchievements.length > 0) {
+                user.achievements.push(...newAchievements);
+            }
+
+            await user.save();
+
+            res.json({
+                result: newResult,
+                rewards: {
+                    xp: earnedXp,
+                    leveledUp,
+                    newLevel: user.level,
+                    newAchievements
+                }
+            });
+        } else {
+            res.json(newResult);
+        }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

@@ -79,13 +79,47 @@ router.post('/login', async (req, res) => {
         // Optional: Check isVerified if you decide to keep it in schema
         // if (!user.isVerified) { ... }
 
-        const payload = { userId: user._id };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-        res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                level: user.level,
+                xp: user.xp,
+                achievements: user.achievements,
+                stats: user.stats
+            }
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ message: 'Server error: ' + err.message });
+    }
+});
+
+// @route   GET /api/auth/me
+// @desc    Get current user data
+// @access  Private
+const authMiddleware = (req, res, next) => {
+    const token = req.header('x-auth-token') || req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decoded.userId;
+        next();
+    } catch (err) {
+        res.status(401).json({ message: 'Token is not valid' });
+    }
+};
+
+router.get('/me', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('-password');
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
     }
 });
 

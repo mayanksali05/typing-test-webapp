@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 const Settings = () => {
-    const [theme, setTheme] = useState('dark');
-    const [font, setFont] = useState('sans');
-    const [textSize, setTextSize] = useState('medium');
+    const { theme, setTheme, font, setFont, textSize, setTextSize } = useTheme();
 
     return (
         <div className="page-container center">
@@ -16,24 +15,16 @@ const Settings = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <span>Theme</span>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                                className={theme === 'dark' ? 'btn-primary' : 'btn-secondary'}
-                                onClick={() => setTheme('dark')}
-                            >
-                                Dark
-                            </button>
-                            <button
-                                className={theme === 'neon' ? 'btn-primary' : 'btn-secondary'}
-                                onClick={() => setTheme('neon')}
-                            >
-                                Neon
-                            </button>
-                            <button
-                                className={theme === 'light' ? 'btn-primary' : 'btn-secondary'}
-                                onClick={() => setTheme('light')}
-                            >
-                                Light
-                            </button>
+                            {['dark', 'neon', 'light'].map((t) => (
+                                <button
+                                    key={t}
+                                    className={theme === t ? 'btn-primary' : 'btn-secondary'}
+                                    onClick={() => setTheme(t)}
+                                    style={{ textTransform: 'capitalize' }}
+                                >
+                                    {t}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -42,7 +33,14 @@ const Settings = () => {
                         <select
                             value={font}
                             onChange={(e) => setFont(e.target.value)}
-                            style={{ padding: '0.5rem', borderRadius: 'var(--radius)', background: 'var(--bg-secondary)', color: 'var(--text-color)', border: '1px solid var(--sub-color)' }}
+                            style={{
+                                padding: '0.5rem',
+                                borderRadius: 'var(--radius)',
+                                background: 'var(--bg-secondary)',
+                                color: 'var(--text-color)',
+                                border: '1px solid var(--sub-color)',
+                                cursor: 'pointer'
+                            }}
                         >
                             <option value="sans">Inter (Sans)</option>
                             <option value="mono">Roboto Mono (Monospace)</option>
@@ -51,14 +49,18 @@ const Settings = () => {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>Text Size</span>
-                        <input
-                            type="range"
-                            min="12"
-                            max="24"
-                            value={textSize === 'small' ? 14 : textSize === 'medium' ? 18 : 22}
-                            onChange={() => { }} // Placeholder
-                            style={{ width: '150px' }}
-                        />
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {['small', 'medium', 'large'].map((s) => (
+                                <button
+                                    key={s}
+                                    className={textSize === s ? 'btn-primary' : 'btn-secondary'}
+                                    onClick={() => setTextSize(s)}
+                                    style={{ fontSize: '0.8rem', textTransform: 'capitalize' }}
+                                >
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -76,5 +78,6 @@ const Settings = () => {
         </div>
     );
 };
+
 
 export default Settings;

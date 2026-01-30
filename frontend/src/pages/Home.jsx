@@ -3,12 +3,13 @@ import TypingArea from '../components/TypingArea';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import PerformanceChart from '../components/PerformanceChart';
 
 const Home = () => {
     const [testState, setTestState] = useState('start'); // start, finished
     const [timeLimit, setTimeLimit] = useState(30);
     const [lastResult, setLastResult] = useState(null);
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [saving, setSaving] = useState(false);
 
     const handleTestEnd = async (stats) => {
@@ -23,8 +24,13 @@ const Home = () => {
                     accuracy: stats.accuracy,
                     errors: stats.incorrectChars,
                     totalCharacters: stats.totalChars,
-                    duration: timeLimit
+                    duration: timeLimit,
+                    rawWpmHistory: stats.wpmHistory,
+                    errorMap: stats.errorMap
                 });
+
+                // Refresh user data to update level/xp in UI
+                if (refreshUser) await refreshUser();
             } catch (err) {
                 console.error("Failed to save result", err);
             }
@@ -107,6 +113,10 @@ const Home = () => {
                                 <div style={{ color: 'var(--sub-color)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Errors</div>
                             </div>
                         </div>
+
+                        {lastResult.wpmHistory && lastResult.wpmHistory.length > 0 && (
+                            <PerformanceChart data={lastResult.wpmHistory} />
+                        )}
 
                         <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                             <button onClick={() => setTestState('start')} className="btn-primary" style={{ padding: '0.8rem 2rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
