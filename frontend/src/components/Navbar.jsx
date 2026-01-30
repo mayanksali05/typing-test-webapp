@@ -38,6 +38,7 @@ const Navbar = () => {
             <div className="links" style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
                 <Link to="/" style={linkStyle('/')} title="Type"><i className="fas fa-keyboard"></i></Link>
                 <Link to="/leaderboard" style={linkStyle('/leaderboard')} title="Leaderboard"><i className="fas fa-crown"></i></Link>
+                <Link to="/multiplayer" style={linkStyle('/multiplayer')} title="Multiplayer"><i className="fas fa-users"></i></Link>
                 <Link to="/about" style={linkStyle('/about')} title="About"><i className="fas fa-info-circle"></i></Link>
                 <Link to="/settings" style={linkStyle('/settings')} title="Settings"><i className="fas fa-cog"></i></Link>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { generateWords } from '../utils/words';
 
 const TypingArea = ({ timeLimit, onTestEnd }) => {
@@ -32,23 +32,7 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
     };
 
     // Timer
-    useEffect(() => {
-        let interval;
-        if (status === 'running' && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        finishTest();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [status, timeLeft]);
-
-    const finishTest = () => {
+    const finishTest = useCallback(() => {
         setStatus('finished');
         // Calculate final stats
         // Note: This is a rough calc passed to parent. Parent can recalculate if needed.
@@ -59,7 +43,24 @@ const TypingArea = ({ timeLimit, onTestEnd }) => {
             incorrectChars,
             totalChars: correctChars + incorrectChars
         });
-    };
+    }, [correctChars, incorrectChars, timeLimit, onTestEnd]);
+
+    // Timer
+    useEffect(() => {
+        let interval;
+        if (status === 'running' && timeLeft > 0) {
+            interval = setInterval(() => {
+                setTimeLeft((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [status, timeLeft]);
+
+    useEffect(() => {
+        if (status === 'running' && timeLeft === 0) {
+            finishTest();
+        }
+    }, [status, timeLeft, finishTest]);
 
     const handleKeyDown = (e) => {
         if (status === 'finished') return;
